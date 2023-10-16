@@ -13,3 +13,4 @@ SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://{}:{}@{}:{}/{}'.format(OUR_USER
 SQLALCHEMY_TRACK_MODIFICATIONS = False
 JWT_SECRET_KEY = OUR_JWTSECRET
 SECRET_KEY = OUR_SECRET
+UPLOAD_FOLDER = 'd:/Andres/Documentos/MISO/Ciclo4/Cloud/Proyecto/MISO_SOLICITUDES_API/static/uploads/'

@@ -1,3 +1,4 @@
+import os
 from datetime import timedelta
 from flask import request, current_app, send_from_directory
 from werkzeug.utils import secure_filename
@@ -9,10 +10,19 @@ from .models import db, Solicitudes
 
 class VistaSolicitud(Resource):
     def post(self):
-        request.get_json(force=True)
-        usuario = request.json['usuario']
+        usuario = request.form['user']
+        archivo = request.files['file']
         if usuario is None:
             return {'message':'Debe enviar un usuario al cual asociar la solicitud'}, 400
+        if archivo is None:
+            return {'message':'Debe enviar un archivo para convertir'}, 400
+        
+        filename = secure_filename(archivo.filename)
+        directorio_destino = f"{current_app.config['UPLOAD_FOLDER']}/{usuario}"
+        if not os.path.exists(directorio_destino):
+            os.makedirs(directorio_destino)
+        archivo.save(os.path.join(directorio_destino, filename))
+
         db.session.add(Solicitudes(
             user=usuario,
             input_path='test',
