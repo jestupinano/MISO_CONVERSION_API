@@ -1,4 +1,4 @@
-# MISO_SOLICITUDES_API
+# MISO_CONVERSION_API
 
 A continuación, se presenta un diagrama que ilustra el diseño de un microservicio destinado a la conversión de formatos de archivos de video. Este servicio cuenta con una serie de endpoints esenciales, los cuales se detallan a continuación:
 
