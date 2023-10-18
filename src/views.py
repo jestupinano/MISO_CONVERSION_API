@@ -8,6 +8,35 @@ from flask_restful import Api
 
 from .models import db, Solicitudes
 
+class VistaSignUp(Resource):
+
+    def post(self):
+        usuario = Usuario.query.filter(
+            Usuario.usuario == request.json["usuario"]).first()
+        if usuario is None:
+            contrasena_encriptada = hashlib.md5(
+                request.json["contrasena"].encode('utf-8')).hexdigest()
+            nuevo_usuario = Administrador(
+                usuario=request.json["usuario"], contrasena=contrasena_encriptada)
+            db.session.add(nuevo_usuario)
+            db.session.commit()
+            token_de_acceso = create_access_token(identity=nuevo_usuario.id)
+            return {"mensaje": "usuario creado exitosamente", "id": nuevo_usuario.id}
+        else:
+            return "El usuario ya existe", 404
+
+    def put(self, id_usuario):
+        usuario = Usuario.query.get_or_404(id_usuario)
+        usuario.contrasena = request.json.get("contrasena", usuario.contrasena)
+        db.session.commit()
+        return usuario_schema.dump(usuario)
+
+    def delete(self, id_usuario):
+        usuario = Usuario.query.get_or_404(id_usuario)
+        db.session.delete(usuario)
+        db.session.commit()
+        return '', 204
+
 class VistaSolicitud(Resource):
     def get(self, file_id):
         if file_id is None:
