@@ -10,6 +10,7 @@ class Solicitudes(db.Model):
     user = db.Column(db.String(128))
     input_path = db.Column(db.String(500))
     output_path = db.Column(db.String(500))
+    fileName = db.Column(db.String(500))
     status = db.Column(db.String(50))
 
 class SolicitudesSchema(SQLAlchemyAutoSchema):

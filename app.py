@@ -18,6 +18,6 @@ db.create_all()
 cors = CORS(app)
 
 api = Api(app)
-api.add_resource(VistaSolicitud, '/convertir/')
+api.add_resource(VistaSolicitud, '/convertir/', '/convertir/<int:file_id>')
 
 jwt = JWTManager(app)
