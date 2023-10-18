@@ -2,9 +2,14 @@
 
 A continuación, se presenta un diagrama que ilustra el diseño de un microservicio destinado a la conversión de formatos de archivos de video. Este servicio cuenta con una serie de endpoints esenciales, los cuales se detallan a continuación:
 
-> - [POST] v1/convert
-> - [GET] v1/convert/{id}
-> - [POST] v1/process
+- /api/auth/signup
+- /api/auth/login
+- /api/tasks
+- /api/tasks/<int:id_task>
+- /api/tasks/<int:id_task>
+- /api/tasks
 
-![DisenioConversior-Página-2](https://github.com/MISO-SOFTWARE-NUBE/MISO_CONVERSION_API/assets/54864717/df07c0e0-86ea-46d2-a7bc-7f68e222ea39)
+![image](https://github.com/MISO-SOFTWARE-NUBE/MISO_CONVERSION_API/assets/54864717/04668aa7-6e99-4e57-96e3-442b7a043133)
+
+
 
