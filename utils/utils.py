@@ -16,6 +16,9 @@ def get_base_file_name(file_path):
     return os.path.basename(file_name)
 
 
+def map_db_request(db_request):
+    return {'task_id': db_request.id, 'status': db_request.status, 'fileName': db_request.fileName, 'original_extension': db_request.input_format, 'target_extension': db_request.output_format}
+
 # def convert_video(input_file_path, output_format, output_folder):
 
 #     valid_formats = ('mp4', 'webm', 'avi', 'mpg', 'wmv')
