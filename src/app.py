@@ -1,11 +1,11 @@
-from . import create_app
+from src import create_app
 from flask import Flask
 from flask_cors import CORS
 from flask_restful import Api
 from flask_jwt_extended import JWTManager
 from datetime import timedelta
-from .src.models import db
-from .src.views import VistaSolicitud, VistaLogIn, VistaSignUp, VistaSolicitudes
+from src.models import db
+from src.views import VistaSolicitud, VistaLogIn, VistaSignUp, VistaSolicitudes
 
 app = create_app('default')
 app_context = app.app_context()

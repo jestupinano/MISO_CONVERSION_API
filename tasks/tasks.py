@@ -1,5 +1,5 @@
 import os
-from .. import create_app
+from src import app
 from moviepy.editor import *
 from celery import Celery
 from celery.signals import task_postrun
@@ -7,15 +7,7 @@ from datetime import datetime
 
 from src.models import db, Solicitudes
 
-app = create_app('default')
-app_context = app.app_context()
-app_context.push()
-
-db.init_app(app)
-db.create_all()
-
 celery_app = Celery('tasks', broker='redis://127.0.0.1:6379/0')
-
 
 def convert_video(input_file_path, output_file_path):
 
@@ -25,6 +17,7 @@ def convert_video(input_file_path, output_file_path):
 
 @celery_app.task(name='conversor.convert')
 def convert(id):
+    print(id)
     # 1. Query record in database
     record = Solicitudes.query.get(id)
     # 2. Register start_processing_time and update status

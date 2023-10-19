@@ -1,5 +1,5 @@
-from .models import db, Solicitudes, Usuario
-from ..utils import get_base_file_name, get_file_extension, map_db_request
+from ..models import db, Solicitudes, Usuario
+from utils import get_base_file_name, get_file_extension, map_db_request
 import hashlib
 import json
 import os
@@ -55,6 +55,8 @@ class VistaSolicitud(Resource):
             return {'message': 'Debe enviar un id de solicitud para descargar el archivo'}, 400
         db_request = Solicitudes.query.filter(
             Solicitudes.id == file_id).first()
+        if db_request is None:
+            return {'message': 'Solicitud no encontrada'}, 404
         # Verifica que el archivo este disponible
         if db_request.status != 'available' and download_type == 'converted':
             return {'message': 'Su archivo aun no esta listo, por favor intente mas tarde'}, 400
