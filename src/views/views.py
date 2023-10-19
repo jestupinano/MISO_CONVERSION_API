@@ -80,24 +80,39 @@ class VistaSolicitud(Resource):
             return {'message': 'Debe enviar un archivo para convertir'}, 400
         logged_user = Usuario.query.get(user_id)
         filename = secure_filename(file.filename)
-        input_path = f"{current_app.config['UPLOAD_FOLDER']}{logged_user.user}/input"
-        output_path = f"{current_app.config['UPLOAD_FOLDER']}{logged_user.user}/output"
-        if not os.path.exists(input_path):
-            os.makedirs(input_path)
-        file.save(os.path.join(input_path, filename))
-        input_format = get_file_extension(f"{input_path}/{filename}")
+
+        # Step 1: Create the Solicitudes entry without paths first
         new_request = Solicitudes(
             user_id=user_id,
-            input_path=input_path,
-            output_path=output_path,
+            input_path="",  # temporary placeholder
+            output_path="",  # temporary placeholder
             fileName=get_base_file_name(filename),
             status='uploaded',
             output_format=output_format,
-            input_format=input_format
+            input_format=get_file_extension(filename)
         )
         db.session.add(new_request)
         db.session.commit()
 
+        # Step 2: Now that we have the ID, construct the paths
+        input_path = os.path.join(
+            current_app.config['UPLOAD_FOLDER'], logged_user.user, 'input', str(new_request.id))
+        output_path = os.path.join(
+            current_app.config['UPLOAD_FOLDER'], logged_user.user, 'output', str(new_request.id))
+
+        # Update the Solicitudes entry with the correct paths
+        new_request.input_path = input_path
+        new_request.output_path = output_path
+        db.session.commit()
+
+        # Step 3 and 4: Check directory existence and save file
+        if not os.path.exists(input_path):
+            os.makedirs(input_path)
+        if not os.path.exists(output_path):
+            os.makedirs(output_path)
+        file.save(os.path.join(input_path, filename))
+
+        # Proceed with the rest of your logic
         args = (new_request.id, )
         enqueue_task.apply_async(args)
 
