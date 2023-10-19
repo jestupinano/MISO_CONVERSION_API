@@ -7,7 +7,7 @@ db = SQLAlchemy()
 
 class Solicitudes(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    userId = db.Column(db.Integer, db.ForeignKey('usuario.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('usuario.id'))
     input_path = db.Column(db.String(500))
     output_path = db.Column(db.String(500))
     input_format = db.Column(db.String(5))
@@ -22,10 +22,19 @@ class Usuario(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user = db.Column(db.String(128))
     email = db.Column(db.String(128))
+    password = db.Column(db.String(128))
 
 class SolicitudesSchema(SQLAlchemyAutoSchema):
     class Meta:
         model = Solicitudes
+        load_instance = True
+
+    id = fields.String()
+
+class UsuarioSchema(SQLAlchemyAutoSchema):
+    class Meta:
+        model = Usuario
+        include_relationships = True
         load_instance = True
 
     id = fields.String()
