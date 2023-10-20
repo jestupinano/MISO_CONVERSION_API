@@ -1,3 +1,5 @@
+import datetime
+
 from ..models import db, Solicitudes, Usuario
 from utils import get_base_file_name, get_file_extension, map_db_request
 import hashlib
@@ -78,41 +80,49 @@ class VistaSolicitud(Resource):
             return {'message': 'Debe enviar un token valido para poder asociar la solicitud'}, 400
         if file is None:
             return {'message': 'Debe enviar un archivo para convertir'}, 400
+        
         logged_user = Usuario.query.get(user_id)
         filename = secure_filename(file.filename)
+        input_format = get_file_extension(filename)
 
-        # Step 1: Create the Solicitudes entry without paths first
-        new_request = Solicitudes(
-            user_id=user_id,
-            input_path="",  # temporary placeholder
-            output_path="",  # temporary placeholder
-            fileName=get_base_file_name(filename),
-            status='uploaded',
-            output_format=output_format,
-            input_format=get_file_extension(filename)
-        )
-        db.session.add(new_request)
-        db.session.commit()
-
-        # Step 2: Now that we have the ID, construct the paths
+        # Step 0: validate formats
+        valid_formats = ('mp4', 'webm', 'avi', 'mpg', 'wmv')
+        if input_format not in valid_formats:
+            return {'message': 'Formato de archivo de entrada invalido'}, 400
+        if output_format not in valid_formats:
+            return {'message': 'Formato de archivo de salida invalido'}, 400
+        if input_format == output_format:
+            return {'message': 'Los formatos de archivo no pueden ser iguales'}, 400
+        
+        # Step 1: with timestamp, construct the paths
+        now = datetime.datetime.now()
+        current_time = int(now.strftime("%Y%m%d%H%M%S"))
         input_path = os.path.join(
-            current_app.config['UPLOAD_FOLDER'], logged_user.user, 'input', str(new_request.id))
+            current_app.config['UPLOAD_FOLDER'], logged_user.user, 'input', str(current_time))
         output_path = os.path.join(
-            current_app.config['UPLOAD_FOLDER'], logged_user.user, 'output', str(new_request.id))
-
-        # Update the Solicitudes entry with the correct paths
-        new_request.input_path = input_path
-        new_request.output_path = output_path
-        db.session.commit()
-
-        # Step 3 and 4: Check directory existence and save file
+            current_app.config['UPLOAD_FOLDER'], logged_user.user, 'output', str(current_time))
+        
+        # Step 2: Check directory existence and save file
         if not os.path.exists(input_path):
             os.makedirs(input_path)
         if not os.path.exists(output_path):
             os.makedirs(output_path)
         file.save(os.path.join(input_path, filename))
 
-        # Proceed with the rest of your logic
+        # Step 3: Create the Solicitudes entry without paths first
+        new_request = Solicitudes(
+            user_id=user_id,
+            input_path=input_path,
+            output_path=output_path,
+            fileName=get_base_file_name(filename),
+            status='uploaded',
+            output_format=output_format,
+            input_format=input_format
+        )
+        db.session.add(new_request)
+        db.session.commit()
+
+        # Proceed with the queue
         args = (new_request.id, )
         enqueue_task.apply_async(args)
 
