@@ -128,7 +128,7 @@ class VistaSolicitud(Resource):
 
         # Step 1: with timestamp, construct the paths
         now = datetime.datetime.now()
-        current_time = int(now.strftime("%Y%m%d%H%M%S"))
+        current_time = now.strftime("%Y%m%d%H%M%S%f")[:-3]
         input_path = os.path.join(
             current_app.config['UPLOAD_FOLDER'], logged_user.user, 'input', str(current_time))
         output_path = os.path.join(
