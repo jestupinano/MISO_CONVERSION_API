@@ -13,7 +13,12 @@ from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identi
 from flask_restful import Api
 from celery import Celery
 
-celery_app = Celery('tasks', broker='redis://127.0.0.1:6379/0')
+RUN_ENV = os.getenv("RUN_ENV", "LOCAL")
+
+if RUN_ENV != 'DOCKER':
+    celery_app = Celery('tasks', broker='redis://127.0.0.1:6379/0')
+else:
+    celery_app = Celery('tasks', broker='redis://redis-server:6379/0')
 
 
 @celery_app.task(name='conversor.convert')

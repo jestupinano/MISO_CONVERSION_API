@@ -1,0 +1,49 @@
+version: "3.8"
+
+services:
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - RUN_ENV=DOCKER
+    networks:
+      - web_net
+    depends_on:
+      - db
+      - redis
+
+  db:
+    image: "postgres:latest"
+    environment:
+      POSTGRES_USER: miso
+      POSTGRES_PASSWORD: miso
+      POSTGRES_DB: conversiones
+    ports:
+      - "5432:5432"
+    networks:
+      - web_net
+
+  redis-server:
+    image: "redis:alpine"
+    ports:
+      - "6379:6379"
+
+  celery:
+    build: .
+    command: ["celery", "-A", "tasks", "worker", "-l", "info"]
+    environment:
+      - RUN_ENV=DOCKER
+    networks:
+      - web_net
+    depends_on:
+      - db
+      - redis
+
+networks:
+  web_net:
+    driver: bridge
+
+volumes:
+  pg-data:
+    driver: local

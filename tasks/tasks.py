@@ -10,7 +10,9 @@ from sqlalchemy.orm import sessionmaker, relationship
 
 Base = declarative_base()
 
-OUR_HOST = os.getenv("DB_HOST", "localhost")
+RUN_ENV = os.getenv("RUN_ENV", "LOCAL")
+
+OUR_HOST = os.getenv("DB_HOST", "localhost" if RUN_ENV != 'DOCKER' else 'db')
 OUR_DB = os.getenv("DB_DB", "conversiones")
 OUR_PORT = os.getenv("DB_PORT", "5432")
 OUR_USER = os.getenv("DB_USER", "miso")
@@ -59,7 +61,10 @@ class Solicitudes(Base):
     usuario = relationship("Usuario", back_populates="solicitudes")
 
 
-celery_app = Celery('tasks', broker='redis://127.0.0.1:6379/0')
+if RUN_ENV != 'DOCKER':
+    celery_app = Celery('tasks', broker='redis://127.0.0.1:6379/0')
+else:
+    celery_app = Celery('tasks', broker='redis://redis-server:6379/0')
 
 
 @celery_app.task(name='conversor.convert')
