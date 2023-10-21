@@ -11,7 +11,7 @@ services:
       - web_net
     depends_on:
       - db
-      - redis
+      - redis-server
 
   db:
     image: "postgres:latest"
@@ -25,6 +25,8 @@ services:
       - web_net
 
   redis-server:
+    networks:
+      - web_net
     image: "redis:alpine"
     ports:
       - "6379:6379"
@@ -38,7 +40,7 @@ services:
       - web_net
     depends_on:
       - db
-      - redis
+      - redis-server
 
 networks:
   web_net:
