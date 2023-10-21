@@ -1,3 +1,5 @@
+import datetime
+
 from ..models import db, Solicitudes, Usuario
 from utils import get_base_file_name, get_file_extension, map_db_request
 import hashlib
@@ -21,28 +23,52 @@ def enqueue_task(id):
 
 class VistaSignUp(Resource):
     def post(self):
-        usuario = Usuario.query.filter(
-            Usuario.user == request.json["user"] or Usuario.email == request.json["email"]).first()
-        if usuario is None:
+
+        campos = {
+            "user": request.json.get("user"),
+            "email": request.json.get("email"),
+            "password": request.json.get("password"),
+        }
+
+        for nombre_campo, valor in campos.items():
+            if valor is None:
+                return {'message': f"Campo {nombre_campo} requerido"}, 400
+
+        user, email, password = campos.values()
+
+        usuario_existente = Usuario.query.filter(
+            Usuario.user == user or Usuario.email == email).first()
+        if usuario_existente is None:
             encrypted_password = hashlib.md5(
-                request.json["password"].encode('utf-8')).hexdigest()
+                password.encode('utf-8')).hexdigest()
             new_user = Usuario(
-                user=request.json["user"], password=encrypted_password, email=request.json["email"])
+                user=user, password=encrypted_password, email=email)
             db.session.add(new_user)
             db.session.commit()
-            return {"mensaje": "usuario creado exitosamente", "id": new_user.id}
+            return {"mensaje": "Usuario creado exitosamente", "id": new_user.id}, 200
         else:
-            return "El usuario ya existe", 404
+            return {"mensaje": "El usuario ya existe"}, 404
 
 
 class VistaLogIn(Resource):
     def post(self):
+        campos = {
+            "user": request.json.get("user"),
+            "password": request.json.get("password"),
+        }
+
+        for nombre_campo, valor in campos.items():
+            if valor is None:
+                return {'message': f"Campo {nombre_campo} requerido"}, 400
+
+        user, password = campos.values()
+
         encrypted_password = hashlib.md5(
-            request.json["password"].encode('utf-8')).hexdigest()
+            password.encode('utf-8')).hexdigest()
         user = Usuario.query.filter(
-            Usuario.user == request.json["user"], Usuario.password == encrypted_password).first()
+            Usuario.user == user, Usuario.password == encrypted_password).first()
         if user is None:
-            return "Usuario o contraseña erroneos", 404
+            return {"mensaje": "Usuario o contraseña erroneos"}, 404
         else:
             access_token = create_access_token(identity=user.id)
             return {"mensaje": "Inicio de sesión exitoso", "token": access_token}
@@ -55,6 +81,9 @@ class VistaSolicitud(Resource):
             return {'message': 'Debe enviar un id de solicitud para descargar el archivo'}, 400
         db_request = Solicitudes.query.filter(
             Solicitudes.id == file_id).first()
+        user_id = get_jwt_identity()
+        if user_id != db_request.user_id:
+            return {'message': 'El recurso solicitado no le pertenece'}, 404
         if db_request is None:
             return {'message': 'Solicitud no encontrada'}, 404
         # Verifica que el archivo este disponible
@@ -66,54 +95,68 @@ class VistaSolicitud(Resource):
         elif download_type == 'converted':
             destination_path = f"{db_request.output_path}/{db_request.fileName}.{db_request.output_format}"
         else:
-            return {'message': 'Debe escojer el origen del archivo (original/converted)'}, 400
+            return {'message': 'Debe escoger el origen del archivo (original/converted)'}, 400
         return send_file(destination_path, as_attachment=True)
 
     @jwt_required()
     def post(self):
         user_id = get_jwt_identity()
-        output_format = request.form['output_format']
-        file = request.files['file']
+
         if user_id is None:
             return {'message': 'Debe enviar un token valido para poder asociar la solicitud'}, 400
+
+        file = request.files.get('file')
         if file is None:
             return {'message': 'Debe enviar un archivo para convertir'}, 400
+
+        output_format = request.form.get('output_format')
+        if not output_format:
+            return {'message': 'Debe enviar el formato de salida deseado'}, 400
+
         logged_user = Usuario.query.get(user_id)
         filename = secure_filename(file.filename)
+        input_format = get_file_extension(filename)
 
-        # Step 1: Create the Solicitudes entry without paths first
-        new_request = Solicitudes(
-            user_id=user_id,
-            input_path="",  # temporary placeholder
-            output_path="",  # temporary placeholder
-            fileName=get_base_file_name(filename),
-            status='uploaded',
-            output_format=output_format,
-            input_format=get_file_extension(filename)
-        )
-        db.session.add(new_request)
-        db.session.commit()
+        # Step 0: validate formats
+        valid_formats = ('mp4', 'webm', 'avi', 'mpg', 'wmv')
+        if input_format not in valid_formats:
+            return {'message': 'Formato de archivo de entrada invalido'}, 400
+        if output_format not in valid_formats:
+            return {'message': 'Formato de archivo de salida invalido'}, 400
+        if input_format == output_format:
+            return {'message': 'Los formatos de archivo no pueden ser iguales'}, 400
 
-        # Step 2: Now that we have the ID, construct the paths
+        # Step 1: with timestamp, construct the paths
+        now = datetime.datetime.now()
+        current_time = int(now.strftime("%Y%m%d%H%M%S"))
         input_path = os.path.join(
-            current_app.config['UPLOAD_FOLDER'], logged_user.user, 'input', str(new_request.id))
+            current_app.config['UPLOAD_FOLDER'], logged_user.user, 'input', str(current_time))
         output_path = os.path.join(
-            current_app.config['UPLOAD_FOLDER'], logged_user.user, 'output', str(new_request.id))
+            current_app.config['UPLOAD_FOLDER'], logged_user.user, 'output', str(current_time))
 
-        # Update the Solicitudes entry with the correct paths
-        new_request.input_path = input_path
-        new_request.output_path = output_path
-        db.session.commit()
-
-        # Step 3 and 4: Check directory existence and save file
+        # Step 2: Check directory existence and save file
         if not os.path.exists(input_path):
             os.makedirs(input_path)
         if not os.path.exists(output_path):
             os.makedirs(output_path)
         file.save(os.path.join(input_path, filename))
 
-        # Proceed with the rest of your logic
+        # Step 3: Create the Solicitudes entry without paths first
+        new_request = Solicitudes(
+            user_id=user_id,
+            input_path=input_path,
+            output_path=output_path,
+            fileName=get_base_file_name(filename),
+            status='uploaded',
+            output_format=output_format,
+            input_format=input_format
+        )
+        db.session.add(new_request)
+        db.session.commit()
+
+        # Proceed with the queue
         args = (new_request.id, )
+        print(args)
         enqueue_task.apply_async(args)
 
         return {'message': f'Solicitud registrada, para consultar su archivo utilice el siguiente id: ({new_request.id})'}, 200
@@ -124,6 +167,9 @@ class VistaSolicitud(Resource):
             return {'message': 'Debe enviar un id de solicitud para borrar'}, 400
         db_request = Solicitudes.query.filter(
             Solicitudes.id == file_id).first()
+        user_id = get_jwt_identity()
+        if user_id != db_request.user_id:
+            return {'message': 'El recurso solicitado no le pertenece'}, 404
         if db_request is None:
             return {'message': 'Solicitud no encontrada'}, 404
         input_file_to_delete = f"{db_request.input_path}/{db_request.fileName}.{db_request.input_format}"
