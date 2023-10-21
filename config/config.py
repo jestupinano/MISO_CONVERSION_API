@@ -19,3 +19,4 @@ SECRET_KEY = OUR_SECRET
 # UPLOAD_FOLDER = 'd:/Andres/Documentos/MISO/Ciclo4/Cloud/Proyecto/MISO_SOLICITUDES_API/static/uploads/'
 APP_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 UPLOAD_FOLDER = os.path.join(APP_ROOT, 'static', 'uploads')
+PROPAGATE_EXCEPTIONS = True
