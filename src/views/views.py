@@ -17,7 +17,7 @@ celery_app = Celery('tasks', broker='redis://127.0.0.1:6379/0')
 
 
 @celery_app.task(name='conversor.convert')
-def enqueue_task(id):
+def perform_task(id):
     pass
 
 
@@ -82,10 +82,10 @@ class VistaSolicitud(Resource):
         db_request = Solicitudes.query.filter(
             Solicitudes.id == file_id).first()
         user_id = get_jwt_identity()
-        if user_id != db_request.user_id:
-            return {'message': 'El recurso solicitado no le pertenece'}, 404
         if db_request is None:
             return {'message': 'Solicitud no encontrada'}, 404
+        if user_id != db_request.user_id:
+            return {'message': 'El recurso solicitado no le pertenece'}, 404
         # Verifica que el archivo este disponible
         if db_request.status != 'available' and download_type == 'converted':
             return {'message': 'Su archivo aun no esta listo, por favor intente mas tarde'}, 400
@@ -157,7 +157,7 @@ class VistaSolicitud(Resource):
         # Proceed with the queue
         args = (new_request.id, )
         print(args)
-        enqueue_task.apply_async(args)
+        perform_task.apply_async(args)
 
         return {'message': f'Solicitud registrada, para consultar su archivo utilice el siguiente id: ({new_request.id})'}, 200
 
@@ -168,10 +168,10 @@ class VistaSolicitud(Resource):
         db_request = Solicitudes.query.filter(
             Solicitudes.id == file_id).first()
         user_id = get_jwt_identity()
-        if user_id != db_request.user_id:
-            return {'message': 'El recurso solicitado no le pertenece'}, 404
         if db_request is None:
             return {'message': 'Solicitud no encontrada'}, 404
+        if user_id != db_request.user_id:
+            return {'message': 'El recurso solicitado no le pertenece'}, 404
         input_file_to_delete = f"{db_request.input_path}/{db_request.fileName}.{db_request.input_format}"
         if os.path.exists(input_file_to_delete):
             os.remove(input_file_to_delete)
