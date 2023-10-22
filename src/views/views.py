@@ -13,11 +13,16 @@ from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identi
 from flask_restful import Api
 from celery import Celery
 
-celery_app = Celery('tasks', broker='redis://127.0.0.1:6379/0')
+RUN_ENV = os.getenv("RUN_ENV", "LOCAL")
+
+if RUN_ENV != 'DOCKER':
+    celery_app = Celery('tasks', broker='redis://127.0.0.1:6379/0')
+else:
+    celery_app = Celery('tasks', broker='redis://redis-server:6379/0')
 
 
 @celery_app.task(name='conversor.convert')
-def enqueue_task(id):
+def perform_task(id):
     pass
 
 
@@ -82,10 +87,10 @@ class VistaSolicitud(Resource):
         db_request = Solicitudes.query.filter(
             Solicitudes.id == file_id).first()
         user_id = get_jwt_identity()
-        if user_id != db_request.user_id:
-            return {'message': 'El recurso solicitado no le pertenece'}, 404
         if db_request is None:
             return {'message': 'Solicitud no encontrada'}, 404
+        if user_id != db_request.user_id:
+            return {'message': 'El recurso solicitado no le pertenece'}, 404
         # Verifica que el archivo este disponible
         if db_request.status != 'available' and download_type == 'converted':
             return {'message': 'Su archivo aun no esta listo, por favor intente mas tarde'}, 400
@@ -128,7 +133,7 @@ class VistaSolicitud(Resource):
 
         # Step 1: with timestamp, construct the paths
         now = datetime.datetime.now()
-        current_time = int(now.strftime("%Y%m%d%H%M%S"))
+        current_time = now.strftime("%Y%m%d%H%M%S%f")[:-3]
         input_path = os.path.join(
             current_app.config['UPLOAD_FOLDER'], logged_user.user, 'input', str(current_time))
         output_path = os.path.join(
@@ -156,7 +161,8 @@ class VistaSolicitud(Resource):
 
         # Proceed with the queue
         args = (new_request.id, )
-        enqueue_task.apply_async(args)
+        print(args)
+        perform_task.apply_async(args)
 
         return {'message': f'Solicitud registrada, para consultar su archivo utilice el siguiente id: ({new_request.id})'}, 200
 
@@ -167,10 +173,10 @@ class VistaSolicitud(Resource):
         db_request = Solicitudes.query.filter(
             Solicitudes.id == file_id).first()
         user_id = get_jwt_identity()
-        if user_id != db_request.user_id:
-            return {'message': 'El recurso solicitado no le pertenece'}, 404
         if db_request is None:
             return {'message': 'Solicitud no encontrada'}, 404
+        if user_id != db_request.user_id:
+            return {'message': 'El recurso solicitado no le pertenece'}, 404
         input_file_to_delete = f"{db_request.input_path}/{db_request.fileName}.{db_request.input_format}"
         if os.path.exists(input_file_to_delete):
             os.remove(input_file_to_delete)
