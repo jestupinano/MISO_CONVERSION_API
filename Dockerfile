@@ -20,7 +20,4 @@ EXPOSE 5000
 # Define environment variable
 ENV FLASK_APP=src/app.py
 
-RUN sleep 5
-
-# Command to run on container start
-CMD ["flask", "run", "--host=0.0.0.0"]
+CMD /bin/bash -c "sleep 10 && flask run --host=0.0.0.0"
