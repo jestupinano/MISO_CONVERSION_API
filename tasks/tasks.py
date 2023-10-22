@@ -93,7 +93,10 @@ def perform_task(id):
 
         # 5. Convert and save file
         cmd = ['ffmpeg', '-i', full_input_path, full_output_path]
-        subprocess.run(cmd)
+        # subprocess.run(cmd)
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        print(result.stdout)
+        print(result.stderr)
 
         record.end_process_date = datetime.now()
         record.status = "available"

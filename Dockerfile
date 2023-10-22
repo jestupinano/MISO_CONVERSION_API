@@ -1,7 +1,7 @@
 # Use an official Python runtime as the base image
-FROM python:3.10-slim
+FROM python:3.10
 
-# Install ffmpeg
+# Install necessary dependencies including ffmpeg
 RUN apt-get update && apt-get install -y ffmpeg
 
 # Set the working directory
@@ -19,6 +19,8 @@ EXPOSE 5000
 
 # Define environment variable
 ENV FLASK_APP=src/app.py
+
+RUN sleep 5
 
 # Command to run on container start
 CMD ["flask", "run", "--host=0.0.0.0"]
