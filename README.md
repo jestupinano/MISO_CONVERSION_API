@@ -14,8 +14,25 @@ A continuación, se presenta un diagrama que ilustra el diseño de un microservi
 ## Proceso de instalación
 
 - Prerequisitos
-  - Instalacion de docker
+  - [Instalacion de docker](https://www.docker.com/get-started/)
 
 - Pasos
   - Clonar el repositorio
+
+  ```sh
+  git clone https://github.com/MISO-SOFTWARE-NUBE/MISO_CONVERSION_API.git
+  ```
+
+  - Ingresar al repositorio
+
+  ```sh
+  cd MISO_CONVERSION_API
+  ```
+
   - Ejecutar comando de compose
+
+  ```sh
+  docker-compose up
+  ```
+  
+- Probar con la coleccion de postman suministrada en la [wiki](https://github.com/MISO-SOFTWARE-NUBE/MISO_CONVERSION_API/wiki)
