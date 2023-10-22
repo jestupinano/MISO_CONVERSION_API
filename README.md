@@ -6,10 +6,16 @@ A continuación, se presenta un diagrama que ilustra el diseño de un microservi
 - /api/auth/login
 - /api/tasks
 - /api/tasks/<int:id_task>
-- /api/tasks/<int:id_task>
+- /api/tasks/download_type/<int:id_task>
 - /api/tasks
 
-![image](https://github.com/MISO-SOFTWARE-NUBE/MISO_CONVERSION_API/assets/54864717/04668aa7-6e99-4e57-96e3-442b7a043133)
+![image](https://github.com/MISO-SOFTWARE-NUBE/MISO_CONVERSION_API/assets/54864717/0ba7d0dc-096f-476b-a423-a5fdc02377b5)
 
+## Proceso de instalación
 
+- Prerequisitos
+  - Instalacion de docker
 
+- Pasos
+  - Clonar el repositorio
+  - Ejecutar comando de compose
