@@ -81,11 +81,11 @@ class VistaLogIn(Resource):
 
 class VistaSolicitud(Resource):
     @jwt_required()
-    def get(self, download_type, file_id):
-        if file_id is None:
+    def get(self, download_type, id_task):
+        if id_task is None:
             return {'message': 'Debe enviar un id de solicitud para descargar el archivo'}, 400
         db_request = Solicitudes.query.filter(
-            Solicitudes.id == file_id).first()
+            Solicitudes.id == id_task).first()
         user_id = get_jwt_identity()
         if db_request is None:
             return {'message': 'Solicitud no encontrada'}, 404
@@ -104,11 +104,11 @@ class VistaSolicitud(Resource):
         return send_file(destination_path, as_attachment=True)
 
     @jwt_required()
-    def delete(self, file_id):
-        if file_id is None:
+    def delete(self, id_task):
+        if id_task is None:
             return {'message': 'Debe enviar un id de solicitud para borrar'}, 400
         db_request = Solicitudes.query.filter(
-            Solicitudes.id == file_id).first()
+            Solicitudes.id == id_task).first()
         user_id = get_jwt_identity()
         if db_request is None:
             return {'message': 'Solicitud no encontrada'}, 404
