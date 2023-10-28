@@ -1,9 +1,7 @@
 import os
 from datetime import timedelta
 
-RUN_ENV = os.getenv("RUN_ENV", "LOCAL")
-
-OUR_HOST = os.getenv("DB_HOST", "localhost" if RUN_ENV != 'DOCKER' else 'db')
+OUR_HOST = os.getenv("DB_HOST", "localhost")
 OUR_DB = os.getenv("DB_DB", "conversiones")
 OUR_PORT = os.getenv("DB_PORT", "5432")
 OUR_USER = os.getenv("DB_USER", "miso")
@@ -19,4 +17,6 @@ JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=24)
 SECRET_KEY = OUR_SECRET
 APP_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 UPLOAD_FOLDER = os.path.join(APP_ROOT, 'static', 'uploads')
+BROKER_HOST = os.getenv("BROKER_HOST", "127.0.0.1")
+BROKER_PORT = os.getenv("BROKER_PORT", "6379")
 PROPAGATE_EXCEPTIONS = True

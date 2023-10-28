@@ -12,13 +12,10 @@ from flask_restful import Resource, reqparse
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, JWTManager
 from flask_restful import Api
 from celery import Celery
+from config import BROKER_HOST, BROKER_PORT
 
-RUN_ENV = os.getenv("RUN_ENV", "LOCAL")
 
-if RUN_ENV != 'DOCKER':
-    celery_app = Celery('tasks', broker='redis://127.0.0.1:6379/0')
-else:
-    celery_app = Celery('tasks', broker='redis://redis-server:6379/0')
+celery_app = Celery('tasks', broker=f'redis://{BROKER_HOST}:{BROKER_PORT}/0')
 
 
 @celery_app.task(name='conversor.convert')

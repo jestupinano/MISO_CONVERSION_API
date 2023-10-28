@@ -6,7 +6,8 @@ services:
     ports:
       - "5000:5000"
     environment:
-      - RUN_ENV=DOCKER
+      - DB_HOST=db
+      - BROKER_HOST=redis-server
     networks:
       - web_net
     depends_on:
@@ -39,7 +40,8 @@ services:
     build: .
     command: ["celery", "-A", "tasks", "worker", "-l", "info"]
     environment:
-      - RUN_ENV=DOCKER
+      - DB_HOST=db
+      - BROKER_HOST=redis-server
     networks:
       - web_net
     depends_on:

@@ -1,0 +1,10 @@
+version: "3.8"
+
+services:
+  worker:
+    build:
+      context: ..
+      dockerfile: ./docker-celery/Dockerfile
+    volumes:
+      - /mnt/nfs_videos:/app/static/upload
+    command: ["celery", "-A", "tasks", "worker", "-l", "info"]
