@@ -5,6 +5,8 @@ services:
     build:
       context: ..
       dockerfile: ./docker-celery/Dockerfile
+    env_file:
+      - ./.env
     volumes:
-      - /mnt/nfs_videos:/app/static/upload
+      - /mnt/nfs_videos:/app/static/uploads
     command: ["celery", "-A", "tasks", "worker", "-l", "info"]

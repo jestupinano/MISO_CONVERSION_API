@@ -135,10 +135,13 @@ class VistaSolicitudes(Resource):
     @jwt_required()
     def post(self):
         user_id = get_jwt_identity()
-
+        print("user_id: ", user_id)
         if user_id is None:
             return {'message': 'Debe enviar un token valido para poder asociar la solicitud'}, 400
-
+        print("request: ", request)
+        print("request.files: ", request.files)
+        print("request.files.file: ", request.files.get('file'))
+        print("request.form.output_data: ", request.form.get('output_data'))
         file = request.files.get('file')
         if file is None:
             return {'message': 'Debe enviar un archivo para convertir'}, 400
