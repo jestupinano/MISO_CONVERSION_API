@@ -1,11 +1,9 @@
-import datetime
-
 from ..models import db, Solicitudes, Usuario
 from utils import get_base_file_name, get_file_extension, map_db_request
 import hashlib
 import json
 import os
-from datetime import timedelta
+from datetime import datetime
 from flask import request, current_app, send_file
 from werkzeug.utils import secure_filename
 from flask_restful import Resource, reqparse
@@ -137,6 +135,11 @@ class VistaSolicitudes(Resource):
         user_id = get_jwt_identity()
         if user_id is None:
             return {'message': 'Debe enviar un token valido para poder asociar la solicitud'}, 400
+        print("request: ", request)
+        print("request.files: ", request.files)
+        print("request.files.file: ", request.files.get('file'))
+        print("request.form.output_format: ",
+              request.form.get('output_format'))
         file = request.files.get('file')
         if file is None:
             return {'message': 'Debe enviar un archivo para convertir'}, 400
@@ -159,7 +162,7 @@ class VistaSolicitudes(Resource):
             return {'message': 'Los formatos de archivo no pueden ser iguales'}, 400
 
         # Step 1: with timestamp, construct the paths
-        now = datetime.datetime.now()
+        now = datetime.now()
         current_time = now.strftime("%Y%m%d%H%M%S%f")[:-3]
         input_path = os.path.join(
             current_app.config['UPLOAD_FOLDER'], logged_user.user, 'input', str(current_time))
@@ -179,6 +182,7 @@ class VistaSolicitudes(Resource):
             input_path=input_path,
             output_path=output_path,
             fileName=get_base_file_name(filename),
+            upload_date=datetime.now(),
             status='uploaded',
             output_format=output_format,
             input_format=input_format
