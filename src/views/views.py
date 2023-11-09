@@ -3,8 +3,9 @@ from utils import get_base_file_name, get_file_extension, map_db_request
 import hashlib
 import json
 import os
+from google.cloud import storage
 from datetime import datetime
-from flask import request, current_app, send_file
+from flask import request, current_app, send_file, make_response
 from werkzeug.utils import secure_filename
 from flask_restful import Resource, reqparse
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, JWTManager
@@ -20,6 +21,8 @@ celery_app = Celery('tasks', broker=f'redis://{BROKER_HOST}:{BROKER_PORT}/0')
 def perform_task(id):
     pass
 
+storage_client = storage.Client.from_service_account_json('../andes-cloud-2023-25-862252fa26cb.json')
+bucket = storage_client.get_bucket('vid-before')
 
 class VistaSignUp(Resource):
     def post(self):
@@ -170,11 +173,8 @@ class VistaSolicitudes(Resource):
             current_app.config['UPLOAD_FOLDER'], logged_user.user, 'output', str(current_time))
 
         # Step 2: Check directory existence and save file
-        if not os.path.exists(input_path):
-            os.makedirs(input_path)
-        if not os.path.exists(output_path):
-            os.makedirs(output_path)
-        file.save(os.path.join(input_path, filename))
+        current_app.logger.info(os.path.join(input_path, filename))
+        cargarArchivo(file,os.path.join(input_path, filename))
 
         # Step 3: Create the Solicitudes entry without paths first
         new_request = Solicitudes(
@@ -196,3 +196,19 @@ class VistaSolicitudes(Resource):
         perform_task.apply_async(args)
 
         return {'message': f'Solicitud registrada, para consultar su archivo utilice el siguiente id: ({new_request.id})'}, 200
+    
+def cargarArchivo(file, url):
+    current_app.logger.info(url)
+    current_app.logger.info("Cargando video")
+
+    blob = bucket.blob(url)
+
+    blob.upload_from_string(
+        file.read(),
+        content_type=file.content_type)
+    return blob.public_url
+
+def leer_archivo(dirreccion_archivo):
+    current_app.logger.info(dirreccion_archivo)
+    blob = bucket.get_blob(dirreccion_archivo)
+    return blob.download_as_bytes()
