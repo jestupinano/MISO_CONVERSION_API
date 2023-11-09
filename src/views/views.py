@@ -100,7 +100,7 @@ class VistaSolicitud(Resource):
             destination_path = f"{db_request.output_path}/{db_request.fileName}.{db_request.output_format}"
         else:
             return {'message': 'Debe escoger el origen del archivo (original/converted)'}, 400
-        return send_file(destination_path, as_attachment=True)
+        return leer_archivo(destination_path)
 
     @jwt_required()
     def delete(self, id_task):
