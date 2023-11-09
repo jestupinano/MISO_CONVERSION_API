@@ -22,7 +22,7 @@ celery_app.broker_connection_retry_on_startup=True
 def perform_task(id):
     pass
 
-storage_client = storage.Client.from_service_account_json('../andes-cloud-2023-25-862252fa26cb.json')
+storage_client = storage.Client.from_service_account_json('../cloud-configurarion.json')
 bucket = storage_client.get_bucket('vid-before')
 
 class VistaSignUp(Resource):
