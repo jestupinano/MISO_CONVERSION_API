@@ -15,6 +15,7 @@ from config import BROKER_HOST, BROKER_PORT
 
 
 celery_app = Celery('tasks', broker=f'redis://{BROKER_HOST}:{BROKER_PORT}/0')
+celery_app.broker_connection_retry_on_startup=True
 
 
 @celery_app.task(name='conversor.convert')
