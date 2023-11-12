@@ -1,5 +1,5 @@
 from ..models import db, Solicitudes, Usuario
-from utils import get_base_file_name, get_file_extension, map_db_request, get_blob_name_from_gs_uri
+from utils import get_base_file_name, get_file_extension, map_db_request
 import hashlib
 import json
 import os
@@ -10,13 +10,8 @@ from flask_restful import Resource, reqparse
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, JWTManager
 from flask_restful import Api
 from celery import Celery
-from config import BROKER_HOST, BROKER_PORT, USE_BUCKET, UPLOAD_BUCKET
-from google.cloud import storage
+from config import BROKER_HOST, BROKER_PORT
 
-
-if USE_BUCKET:
-    client = storage.Client()
-    bucket = client.bucket(UPLOAD_BUCKET)
 
 celery_app = Celery('tasks', broker=f'redis://{BROKER_HOST}:{BROKER_PORT}/0')
 
@@ -93,27 +88,15 @@ class VistaSolicitud(Resource):
             return {'message': 'El recurso solicitado no le pertenece'}, 404
         # Verifica que el archivo este disponible
         if db_request.status != 'available' and download_type == 'converted':
-            if db_request.status == 'failed':
-                return {'message': 'Ocurrió un error en la conversión de su archivo'}, 400
             return {'message': 'Su archivo aun no esta listo, por favor intente mas tarde'}, 400
-        if USE_BUCKET:
-            if download_type == 'original':
-                blob_path = get_blob_name_from_gs_uri(db_request.input_path)
-            elif download_type == 'converted':
-                blob_path = get_blob_name_from_gs_uri(db_request.output_path)
-            else:
-                return {'message': 'Debe escoger el origen del archivo (original/converted)'}, 400
-            public_url = f"https://storage.googleapis.com/{UPLOAD_BUCKET}/{blob_path}"
-            return {'download_url': public_url}, 200
+        # Descarga el archivo (original/converted) del servidor
+        if download_type == 'original':
+            destination_path = f"{db_request.input_path}/{db_request.fileName}.{db_request.input_format}"
+        elif download_type == 'converted':
+            destination_path = f"{db_request.output_path}/{db_request.fileName}.{db_request.output_format}"
         else:
-            # Descarga el archivo (original/converted) del servidor
-            if download_type == 'original':
-                destination_path = f"{db_request.input_path}/{db_request.fileName}.{db_request.input_format}"
-            elif download_type == 'converted':
-                destination_path = f"{db_request.output_path}/{db_request.fileName}.{db_request.output_format}"
-            else:
-                return {'message': 'Debe escoger el origen del archivo (original/converted)'}, 400
-            return send_file(destination_path, as_attachment=True)
+            return {'message': 'Debe escoger el origen del archivo (original/converted)'}, 400
+        return send_file(destination_path, as_attachment=True)
 
     @jwt_required()
     def delete(self, id_task):
@@ -126,25 +109,12 @@ class VistaSolicitud(Resource):
             return {'message': 'Solicitud no encontrada'}, 404
         if user_id != db_request.user_id:
             return {'message': 'El recurso solicitado no le pertenece'}, 404
-        if USE_BUCKET:
-            # Get and delete input and output blobs
-            input_blob_name = get_blob_name_from_gs_uri(db_request.input_path)
-            input_blob = bucket.blob(input_blob_name)
-            if input_blob.exists():
-                input_blob.delete()
-
-            output_blob_name = get_blob_name_from_gs_uri(
-                db_request.output_path)
-            output_blob = bucket.blob(output_blob_name)
-            if output_blob.exists():
-                output_blob.delete()
-        else:
-            input_file_to_delete = f"{db_request.input_path}/{db_request.fileName}.{db_request.input_format}"
-            if os.path.exists(input_file_to_delete):
-                os.remove(input_file_to_delete)
-            output_file_to_delete = f"{db_request.output_path}/{db_request.fileName}.{db_request.output_format}"
-            if os.path.exists(output_file_to_delete):
-                os.remove(output_file_to_delete)
+        input_file_to_delete = f"{db_request.input_path}/{db_request.fileName}.{db_request.input_format}"
+        if os.path.exists(input_file_to_delete):
+            os.remove(input_file_to_delete)
+        output_file_to_delete = f"{db_request.output_path}/{db_request.fileName}.{db_request.output_format}"
+        if os.path.exists(output_file_to_delete):
+            os.remove(output_file_to_delete)
         db.session.delete(db_request)
         db.session.commit()
         return {'message': 'Solicitud eliminada'}, 200
@@ -194,33 +164,23 @@ class VistaSolicitudes(Resource):
         # Step 1: with timestamp, construct the paths
         now = datetime.now()
         current_time = now.strftime("%Y%m%d%H%M%S%f")[:-3]
+        input_path = os.path.join(
+            current_app.config['UPLOAD_FOLDER'], logged_user.user, 'input', str(current_time))
+        output_path = os.path.join(
+            current_app.config['UPLOAD_FOLDER'], logged_user.user, 'output', str(current_time))
 
-        # Step 2: Upload file based on USE_BUCKET env variable
-        if USE_BUCKET:
-            input_blob = bucket.blob(
-                f'{logged_user.user}/input/{current_time}/{filename}')
-            input_blob.upload_from_string(
-                file.read(), content_type=file.content_type)
-            output_blob = bucket.blob(
-                f'{logged_user.user}/output/{current_time}/{get_base_file_name(filename)}.{output_format}')
-        else:
-            input_path = os.path.join(
-                current_app.config['UPLOAD_FOLDER'], logged_user.user, 'input', str(current_time))
-            output_path = os.path.join(
-                current_app.config['UPLOAD_FOLDER'], logged_user.user, 'output', str(current_time))
-
-            # Check directory existence and save file
-            if not os.path.exists(input_path):
-                os.makedirs(input_path)
-            if not os.path.exists(output_path):
-                os.makedirs(output_path)
-            file.save(os.path.join(input_path, filename))
+        # Step 2: Check directory existence and save file
+        if not os.path.exists(input_path):
+            os.makedirs(input_path)
+        if not os.path.exists(output_path):
+            os.makedirs(output_path)
+        file.save(os.path.join(input_path, filename))
 
         # Step 3: Create the Solicitudes entry without paths first
         new_request = Solicitudes(
             user_id=user_id,
-            input_path=input_path if not USE_BUCKET else f'gs://{bucket.name}/{input_blob.name}',
-            output_path=output_path if not USE_BUCKET else f'gs://{bucket.name}/{output_blob.name}',
+            input_path=input_path,
+            output_path=output_path,
             fileName=get_base_file_name(filename),
             upload_date=datetime.now(),
             status='uploaded',
