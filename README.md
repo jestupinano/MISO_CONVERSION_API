@@ -38,7 +38,6 @@ A continuación, se presenta un diagrama que ilustra el diseño de un microservi
 - Probar con la coleccion de postman suministrada en la [wiki](https://github.com/MISO-SOFTWARE-NUBE/MISO_CONVERSION_API/wiki)
 
 ## Proceso de instalación en instancias en plataforma de nube
-
 Hemos creado 2 directorios llamados docker-celery y docker-web. Adentro de dichos directorios se encuentran los archivos de docker-compose correspondientes para correr cada servicio en máquinas independientes. Se espera que adentro de este directorio exista un archivo .env con las siguientes variables que dependerán de su configuración de instancias en la nube:
   
   - DB_HOST
@@ -48,3 +47,15 @@ Hemos creado 2 directorios llamados docker-celery y docker-web. Adentro de dicho
   - DB_PW
   - BROKER_HOST
   - BROKER_PORT
+
+## Proceso de instalación en instancias en plataforma de nube (entrega 5)
+Hemos creado 2 directorios llamados docker-celery-bucket y docker-web-bucket. Adentro de dichos directorios se encuentran los archivos de docker-compose correspondientes para correr cada servicio en máquinas independientes. Se espera que adentro de este directorio exista un archivo .env con las siguientes variables que dependerán de su configuración de instancias en la nube:
+- DB_HOST
+- DB_DB
+- DB_PORT
+- DB_USER
+- DB_PW
+- BROKER_HOST
+- BROKER_PORT
+- USE_BUCKET
+- UPLOAD_BUCKET
