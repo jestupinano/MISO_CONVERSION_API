@@ -17,6 +17,8 @@ JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=24)
 SECRET_KEY = OUR_SECRET
 APP_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 UPLOAD_FOLDER = os.path.join(APP_ROOT, 'static', 'uploads')
+UPLOAD_BUCKET = os.getenv("UPLOAD_BUCKET", "miso-converter-flask-app")
 BROKER_HOST = os.getenv("BROKER_HOST", "127.0.0.1")
 BROKER_PORT = os.getenv("BROKER_PORT", "6379")
 PROPAGATE_EXCEPTIONS = True
+USE_BUCKET = os.getenv("USE_BUCKET", "False").lower() in ('true', '1', 't')
