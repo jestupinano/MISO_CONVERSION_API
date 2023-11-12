@@ -72,7 +72,7 @@ print("Celery is using BROKER_HOST:", BROKER_HOST)
 celery_app = Celery('tasks', broker=f'redis://{BROKER_HOST}:{BROKER_PORT}/0')
 
 USE_BUCKET = os.getenv("USE_BUCKET", "False").lower() in ('true', '1', 't')
-UPLOAD_BUCKET = 'miso-converter-flask-app'
+UPLOAD_BUCKET = os.getenv("UPLOAD_BUCKET", "miso-converter-flask-app")
 if USE_BUCKET:
     client = storage.Client()
     bucket = client.bucket(UPLOAD_BUCKET)
